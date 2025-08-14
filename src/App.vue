@@ -19,6 +19,25 @@
     <p>{{ title }}</p>
   </section>
 
+  <section style="margin-top:16px;">
+  <h3>Mini List</h3>
+
+  <input v-model="newItem" placeholder="Add item" />
+  <button @click="addItem()">Add</button>
+
+  <p v-if="items.length === 0" style="opacity:.7; margin-top:6px;">(No items)</p>
+
+  <ul style="margin-top:6px;">
+    <li v-for="it in items" :key="it.id" style="margin-top:6px;">
+      <input type="checkbox" :checked="it.done" @change="toggleDone(it.id)" />
+      <span :class="{ done: it.done }">{{ it.text }}</span>
+      <button @click="removeItem(it.id)">x</button>
+    </li>
+
+  </ul>
+</section>
+
+
   <section v-if="showAdvanced" style="margin-top: 8px;">
     <p><strong>v-if:</strong></p>
   </section>
@@ -30,9 +49,10 @@
 </template>
 
 <script setup>
-const title ='My first page'
+import { ref, computed } from 'vue'   // 合併 import 放最上面
 
-import { ref } from 'vue';
+const title = 'My first page'
+
 const count = ref(0)
 const inc = () =>{
   count.value = count.value+1
@@ -42,6 +62,24 @@ const reset = () => {
 }
 const dec = () => { if (count.value > 0) count.value--}
 const showAdvanced = ref(false)
+const items = ref([{ id:1, text: 'Learn ref',done:false}])
+const newItem = ref('')
+const addItem = () => {
+  const t = newItem.value.trim()
+  if (!t) return
+  items.value.push({ id: Date.now(), text: t, done: false })  // items + Date.now()
+  newItem.value = ''
+}
+
+const removeItem = (id) => {
+  items.value = items.value.filter(it => it.id !== id)        // items（不是 item）
+}
+
+const toggleDone = (id) => {
+  const it = items.value.find(x => x.id === id)
+  if (it) it.done = !it.done
+}
+
 
 import { computed } from 'vue'
 
@@ -49,10 +87,18 @@ const a = ref(0)
 const b = ref(0)
 const sum = computed(() =>a.value + b.value)
 
+
+
 </script>
 
 <style>
 .hot {color: tomato;}
 section{line-height: 1.6;}
+.done { text-decoration: line-through; opacity: .6; }
+li button { margin-left: 8px; }
+input { margin-right: 8px; }
+.done { text-decoration: line-through; opacity: .6; }
+
+
 
 </style>
