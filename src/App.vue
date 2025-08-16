@@ -19,20 +19,34 @@
     <p>{{ title }}</p>
   </section>
 
+<div style="margin: 8px">
+  <button @click="filter='all'" :class="{hot: filter==='all'}">ALL</button>
+  <button @click="filter='active'" :class="{hot: fliter==='active'}">Active</button>
+  <button @click="filter='done'" :class="{hot: filter==='done'}">Done</button>
+</div>
+
+
   <section style="margin-top:16px;">
   <h3>Mini List</h3>
 
-  <input v-model="newItem" placeholder="Add item" />
-  <button @click="addItem()">Add</button>
+  <input v-model="newItem" placeholder="Add item" @keyup.enter="addItem()" />
+  <button @click="addItem()" :disabled="!canAdd">Add</button>
+
 
   <p v-if="items.length === 0" style="opacity:.7; margin-top:6px;">(No items)</p>
 
   <ul style="margin-top:6px;">
-    <li v-for="it in items" :key="it.id" style="margin-top:6px;">
+    <li v-for="it in filterItems" :key="it.id" style="margin-top:6px;">
       <input type="checkbox" :checked="it.done" @change="toggleDone(it.id)" />
       <span :class="{ done: it.done }">{{ it.text }}</span>
       <button @click="removeItem(it.id)">x</button>
     </li>
+    <footer style="margin-top: 8px;display: flex; gap:12px; align-items: center;">
+      <span>{{ leftCount }}item left</span>
+      <button @click="clearComplted()":disable="items.every(it=> !it.done)">
+       Clear complted
+      </button>
+    </footer>
 
   </ul>
 </section>
@@ -49,10 +63,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'   // 合併 import 放最上面
+import { ref, computed, watch, onMounted } from 'vue'   // 合併 import 放最上面
+
+const filter = ref('all')
+const filteredItems = computed(() =>{
+  if (filter.value === 'active') return items.value.filter(it=> !it.done)
+  if (filter.value ==='done')    return items.value.filter(it=> !it.done)
+return items.value
+})
 
 const title = 'My first page'
-
 const count = ref(0)
 const inc = () =>{
   count.value = count.value+1
@@ -80,13 +100,41 @@ const toggleDone = (id) => {
   if (it) it.done = !it.done
 }
 
-
-import { computed } from 'vue'
-
 const a = ref(0)
 const b = ref(0)
 const sum = computed(() =>a.value + b.value)
 
+const leftCount = computed(()=> items.value.filter(it=> !it.done).length)
+const clearComplted = () => {
+  items.value = items.value.filter(it=> !it.done)
+}
+
+const STORAGE_KEY = 'todo-items-v1'
+
+// 載入
+onMounted(() => {
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (!raw) return
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      items.value = parsed.map(it => ({
+        id: it.id ?? Date.now() + Math.random(),
+        text: String(it.text ?? ''),
+        done: !!it.done
+      }))
+    }
+  } catch (e) {
+    console.warn('Failed to load todos:', e)
+  }
+})
+
+// 監看並存檔（deep 讓內部屬性變更也會觸發）
+watch(items, (val) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+}, { deep: true })
+
+const canAdd = computed(() => newItem.value.trim().length > 0)
 
 
 </script>
